@@ -1,1 +1,1 @@
-banks = {'480' : 'SuperBank', '720' : 'GorgeousBank'}
+banks = {'480': 'SuperBank', '720': 'GorgeousBank'}
