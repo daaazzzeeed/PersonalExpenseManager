@@ -60,6 +60,7 @@ def get_expenses_per_month(data, date):
     First number in each list always stores SuperBank
     Second number in each list always stores GorgeousBank
     [[c1,c2],[ex1,ex2],[in1,in2]]"""
+    records = []
     total_expenses = [0, 0]
     total_incomes = [0, 0]
     card_numbers = [0, 0]
@@ -75,6 +76,7 @@ def get_expenses_per_month(data, date):
         month = int(date[1])
         date = datetime.datetime(year, month, 1)
         if date <= end and date >= begin:
+            records.append(item)
             phone = item['phone']
             bank_name = get_bank_name(phone)
             if bank_name == constants.banks['480']:
@@ -91,7 +93,7 @@ def get_expenses_per_month(data, date):
                  else:
                      total_incomes[1] += int(item['text'][1])
     if card_numbers[0] != 0 or card_numbers[1] != 0:
-        return [card_numbers, total_expenses, total_incomes]
+        return [card_numbers, total_expenses, total_incomes, records]
     else:
         return 0
 
