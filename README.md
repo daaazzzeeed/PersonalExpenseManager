@@ -16,3 +16,4 @@ Most of the online banking services send text messages (SMSs) as confirmations t
 about all the operations related to their bank accounts (credit cards).
 
 In this project, i will implement a system that uses these messages to build a simple personal expense management application.
+Upd: Major changes coming (I missed the whole weekend resting )
