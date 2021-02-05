@@ -1,140 +1,154 @@
-import banking
+import functions
+import constants
 import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 
 
-dataset = 'dataset.txt'
-messages = banking.read_data(dataset)
+dataset = 'messages.txt'
+records_list = functions.get_dataset(dataset)
 
 while 1:
-    banking.show_menu()
+    functions.menu()
     try:
-        selection = input('Choose: ')
+        user_choice = input('Choose: ')
 
-        if selection == '1':
-            card1 = banking.get_current_funds(messages, '480')
-            card2 = banking.get_current_funds(messages, '720')
-            card_numbers = banking.get_my_cards(messages)
-            GorgeousBank = card_numbers.pop()
-            SuperBank = card_numbers.pop()
-            print('1. *' + SuperBank + ' (SuperBank): {money} EUR'.format(money=card1))
-            print('2. *' + GorgeousBank + ' (GorgeousBank) {money} EUR'.format(money=card2))
+        if user_choice == '1':
+            phone_list = functions.get_banks(records_list)
+            cards = functions.get_cards(records_list)
 
-        elif selection == '2':
+            k = 1
+            for p in phone_list:
+                current_funds = functions.get_current_funds(records_list, p)
+                try:
+                    print(str(k) + '. *' + cards[k - 1] + ' (' + constants.banks[p] + ') : {money} EUR'
+                          .format(money=functions.get_current_funds(records_list, p)))
+                    k = k + 1
+                except KeyError:
+                    print(str(k) + '. *' + cards[k - 1] + ' (Bank' + str(k) + ') : {money} EUR'
+                          .format(money=functions.get_current_funds(records_list, p)))
+                    k = k + 1
+
+        elif user_choice == '2':
     
-            my_cards = banking.get_my_cards(messages)
-            GorgeousBank = my_cards.pop()
-            SuperBank = my_cards.pop()
+            cards_list = functions.get_cards(records_list)
+            SuperBank = str(cards_list[0])
+            GorgeousBank = str(cards_list[1])
             print('1. *' + SuperBank + ' (SuperBank)')
             print('2. *' + GorgeousBank + ' (GorgeousBank)')
-            print('3. Total')
-            print('4. Exit to main menu')
 
-            choice = input('Choose: ')
+            k = 3
+            for j in range(2, len(cards_list), 1):
+                print(str(k) + '. *' + str(cards_list[j]) + '(bank' + str(k) + ')')
+                k = k + 1
+            print(str(k) + '. Total')
+            k = k + 1
+            print(str(k) + '. Exit to main menu')
 
-            if choice == '1' or choice == '2':
+            selection = input('Choose: ')
+            if selection != str(k) and selection != str(k - 1):
                 message = 'Input Month-Year: '
-                date = banking.input_datetime(message)
-                date_list = date.split('-')
-                results = banking.get_expenses_per_month(messages, date_list)
-                if results != 0:
-                    index = int(choice) - 1
-                    print('Report for {month} {year}, card {card}(SuperBank)'.format(month=datetime.datetime(int(date_list[1]), int(date_list[0]), 1).strftime('%B'), year=date_list[1], card=results[0][index]))
-                    print('Received {amount} EUR'.format(amount=results[2][index]))
-                    print('Spent {amount} EUR'.format(amount=results[1][index]))
-                    print('Delta {amount} EUR'.format(amount=int(results[2][index])-int(results[1][index])))
-                    ans = input('Export a full report to Excel?')
+                date = functions.input_datetime(message)
+                date_to_list = date.split('-')
+                banks = functions.get_banks(records_list)
+                resulting_expenses = functions.get_expenses(records_list, date_to_list, banks)
+                if resulting_expenses != 0:
+                    index = int(selection) - 1
+                    cards_list = functions.get_cards(records_list)
+                    print('Report for {month} {year}, card {card}'
+                          .format(month=datetime.datetime(int(date_to_list[1]), int(date_to_list[0]), 1)
+                                  .strftime('%B'), year=date_to_list[1], card=cards_list[len(cards_list) - 1 - index]))
+
+                    print('Received {amount} EUR'.format(amount=resulting_expenses[1][index]))
+                    print('Spent {amount} EUR'.format(amount=resulting_expenses[0][index]))
+                    print('Delta {amount} EUR'.format(amount=int(resulting_expenses[1][index]) - int(resulting_expenses[0][index])))
+                    ans = input('Export a full report to Excel? ')
                     if ans == 'y':
-                        wb = Workbook()
-                        ws = wb.active
-                        ws['A1'] = 'Time'
-                        ws['A1'].font = Font(b=True, color="ff0080")
-                        ws['B1'] = 'Phone'
-                        ws['B1'].font = Font(b=True, color="ff0080")
-                        ws['C1'] = 'Card Number'
-                        ws['C1'].font = Font(b=True, color="ff0080")
-                        ws['D1'] = 'Type of transaction'
-                        ws['D1'].font = Font(b=True, color="ff0080")
-                        ws['E1'] = 'Sum of transaction'
-                        ws['E1'].font = Font(b=True, color="ff0080")
-                        ws['F1'] = 'Balance'
-                        ws['F1'].font = Font(b=True, color="ff0080")
+                        workbook = Workbook()
+                        worksheet = workbook.active
+                        worksheet['A1'] = 'Date'
+                        worksheet['A1'].font = Font(b=True, color="D705F3")
+                        worksheet['B1'] = 'Telephone'
+                        worksheet['B1'].font = Font(b=True, color="D705F3")
+                        worksheet['C1'] = 'Card No'
+                        worksheet['C1'].font = Font(b=True, color="D705F3")
+                        worksheet['D1'] = 'Type'
+                        worksheet['D1'].font = Font(b=True, color="D705F3")
+                        worksheet['E1'] = 'Sum'
+                        worksheet['E1'].font = Font(b=True, color="D705F3")
+                        worksheet['F1'] = 'Balance'
+                        worksheet['F1'].font = Font(b=True, color="D705F3")
 
-                        i = 1
-                        for r in results[3]:
-                            ws['A' + str(i+1)] = r['time']
-                            ws['B' + str(i+1)] = r['phone']
-                            if r['phone'] == '480':
-                                ws['C' + str(i+1)] = r['text'][1]
-                                ws['D' + str(i+1)] = r['text'][0]
-                                ws['E' + str(i + 1)] = r['text'][2]
-                                ws['F' + str(i + 1)] = r['text'][3]
-                            else:
-                                ws['C' + str(i + 1)] = r['text'][0]
-                                sum_of_transaction = r['text'][1]
-                                sum_of_transaction = int(sum_of_transaction[1:])
-                                ws['E' + str(i + 1)] = sum_of_transaction
-                                if sum_of_transaction > 0:
-                                    ws['D' + str(i + 1)] = 'Transfer'
+                        k = 1
+
+                        for received in records_list:
+                            if received['phone'] == resulting_expenses[2][index]:
+                                worksheet['A' + str(k + 1)] = received['time']
+                                worksheet['B' + str(k + 1)] = received['phone']
+                                if received['phone'] == '480':
+                                    worksheet['C' + str(k + 1)] = received['text'][1]
+                                    worksheet['D' + str(k + 1)] = received['text'][0]
+                                    worksheet['E' + str(k + 1)] = received['text'][2]
+                                    worksheet['F' + str(k + 1)] = received['text'][3]
                                 else:
-                                    ws['D' + str(i + 1)] = 'Withdrawal'
-                                ws['F' + str(i + 1)] = r['text'][2]
-                            i += 1
-                        ws.column_dimensions['A'].width = 20
-                        ws.column_dimensions['B'].width = 20
-                        ws.column_dimensions['C'].width = 20
-                        ws.column_dimensions['D'].width = 20
-                        ws.column_dimensions['E'].width = 20
-                        ws.column_dimensions['F'].width = 20
-                        r1 = int(results[2][0])
-                        r2 = int(results[2][1])
-                        s1 = int(results[1][0])
-                        s2 = int(results[1][1])
-                        ws['A' + str(i + 2)] = 'Received: {0} EUR'.format(r1 + r2)
-                        ws['A' + str(i + 2)].font = Font(b=True, color="007f00")
-                        ws['B' + str(i + 2)] = 'Spent: {0} EUR'.format(s1 + s2)
-                        ws['B' + str(i + 2)].font = Font(b=True, color="FF0000")
-                        ws['C' + str(i + 2)] = 'Delta: {0} EUR'.format(r1 + r2 - s1 - s2)
-                        ws['C' + str(i + 2)].font = Font(b=True, color="0000FF")
+                                    worksheet['C' + str(k + 1)] = received['text'][0]
+                                    quantity = received['text'][1]
+                                    quantity = int(quantity[1:])
+                                    worksheet['E' + str(k + 1)] = quantity
+                                    if quantity > 0:
+                                        worksheet['D' + str(k + 1)] = 'Transfer'
+                                    else:
+                                        worksheet['D' + str(k + 1)] = 'Withdrawal'
+                                    worksheet['F' + str(k + 1)] = received['text'][2]
+                                k = k + 1
+                        worksheet.column_dimensions['A'].width = 20
+                        worksheet.column_dimensions['B'].width = 20
+                        worksheet.column_dimensions['C'].width = 20
+                        worksheet.column_dimensions['D'].width = 20
+                        worksheet.column_dimensions['E'].width = 20
+                        worksheet.column_dimensions['F'].width = 20
+                        received = resulting_expenses[1][index]
+                        spent = resulting_expenses[0][index]
+                        worksheet['A' + str(k + 2)] = 'Received: {0} EUR'.format(received)
+                        worksheet['A' + str(k + 2)].font = Font(b=True, color="007f00")
+                        worksheet['B' + str(k + 2)] = 'Spent: {0} EUR'.format(spent)
+                        worksheet['B' + str(k + 2)].font = Font(b=True, color="FF0000")
+                        worksheet['C' + str(k + 2)] = 'Delta: {0} EUR'.format(received - spent)
+                        worksheet['C' + str(k + 2)].font = Font(b=True, color="0000FF")
 
-                        for row in ws.rows:
+                        for row in worksheet.rows:
                             for cell in row:
                                 cell.alignment = Alignment(horizontal='left')
-                        wb.save('FullMonthReport.xlsx')
+                        workbook.save('Report.xlsx')
                 else:
-                    print('No transactions in specified period')
+                    print('No transactions in this period')
 
-            elif choice == '3':
+            elif selection == str(k - 1):
                 message = 'Input Month-Year: '
-                date = banking.input_datetime(message)
-                date_list = date.split('-')
-                results = banking.get_expenses_per_month(messages, date_list)
-                if results != 0:
-                    total_expenses = results[1][0] + results[1][1]
-                    total_incomes = results[2][0] + results[2][1]
-                    index = int(choice) - 1
+                date = functions.input_datetime(message)
+                date_to_list = date.split('-')
+                resulting_expenses = functions.get_expenses(records_list, date_to_list, functions.get_banks(records_list))
+                if resulting_expenses != 0:
+                    total_resulting_expenses = sum(resulting_expenses[0])
+                    total_resulting_incomes = sum(resulting_expenses[1])
+                    index = int(selection) - 1
                     print('Report for {month} {year}: '
-                        .format(month=datetime.datetime(int(date_list[1]), int(date_list[0]), 1).strftime('%B'),
-                        year=date_list[1]))
-                    print('Received {amount} EUR'.format(amount=total_incomes))
-                    print('Spent {amount} EUR'.format(amount=total_expenses))
-                    print('Delta {amount} EUR'.format(amount=total_incomes - total_expenses))
+                          .format(month=datetime.datetime(int(date_to_list[1]), int(date_to_list[0]), 1).strftime('%B'),
+                                  year=date_to_list[1]))
+                    print('Received {amount} EUR'.format(amount=total_resulting_incomes))
+                    print('Spent {amount} EUR'.format(amount=total_resulting_expenses))
+                    print('Delta {amount} EUR'.format(amount=total_resulting_incomes - total_resulting_expenses))
                 else:
                     print('No transactions in specified period')
 
-            elif choice == '4':
+            elif selection == str(k):
                 continue
             else:
-                print('Choose between 1, 2 or 3')
+                print('Wrong choice')
 
-        elif selection == '3':
+        elif user_choice == '3':
             break
         else:
-            print('Choose between 1, 2 or 3')
+            print('Wrong choice')
     except KeyboardInterrupt:
-        print('Input interrupted')
-    
-
-
-    
+        print('Input Error')
